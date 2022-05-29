@@ -1,10 +1,14 @@
-fs = require('fs')  // biblioteca usada para ler arquivos
+const fs = require('fs')  // biblioteca usada para ler arquivos
 
 const express = require('express');  // biblioteca que cria as rotas
+const { emit } = require('process');
+const cors = require('cors');   // access-control-allow-origin
 
 const app = express();  // inicia o servidor express
+app.use(cors());  // necessário para a execução local
 
 app.get('/:id', (req, res)=>{  // rota principal - chamada {url}/12345-678
+    const inicio = performance.now();
 
     // pega o cep da url: remove caraceteres especiais como "-"
     const cep = parseInt(req.params.id.replace(/[^0-9]/g,'')); 
@@ -23,7 +27,8 @@ app.get('/:id', (req, res)=>{  // rota principal - chamada {url}/12345-678
     }
 
     // le arquivo com os ceps
-    fs.readFile('./src/data/cep.tsv', 'utf8', function (err,data) {
+    fs.readFile('./data/cep.tsv', 'utf8', function (err,data) {
+
         if (err) { return console.log(err); }
 
         const linhas = data.split("\n"); // separa dados em linhas
@@ -32,7 +37,7 @@ app.get('/:id', (req, res)=>{  // rota principal - chamada {url}/12345-678
         // caso não encontre o cep, o tipo será 'undefined'
         if(typeof consulta != 'undefined'){  // se encontrar algo:
 
-            const coluna = consulta.split("\t");
+            const coluna = consulta.split("\t"); // separa as colunas
 
             const resposta = {  // formata a resposta
                 cep: coluna[0],
@@ -41,12 +46,17 @@ app.get('/:id', (req, res)=>{  // rota principal - chamada {url}/12345-678
                 bairro: coluna[3],
                 rua: coluna[4]
             }
-            res.send(resposta); // exibe o json na tela
+            res.json(resposta); // exibe o json na tela
+
         }
         else{  // se não encontrar
             res.send("CEP não encontrado."); // exibe cep não encontrado
         }
+
+        const fim = performance.now();
+        console.log("Finalizado em", parseInt(fim-inicio), "ms")
+
       });
  });
 
- app.listen(3001); // carrega server na porta 3001
+app.listen(3001); // carrega server na porta 3001
